@@ -1,0 +1,116 @@
+sequenceDiagram
+  autonumber
+  participant U as 用户
+  participant UI as 页面与组件
+  participant S as useAppStore
+  participant D as domain 纯函数层
+  participant R as Repository
+  participant DB as IndexedDB
+  participant PV as 站内预览
+  participant SV as 家庭空间视图
+
+  rect rgb(232, 240, 254)
+  Note over U,DB: ① 启动初始化 / 刷新恢复 / CRUD 持久化 (F-2 F-3 Q1 Q9)
+  U->>UI: 打开应用（在线或离线）
+  UI->>R: bootstrap() → openDB() 版本迁移
+  R->>DB: 建 state / assets 两个 store
+  UI->>R: readState()
+  alt 首次运行无 app_state
+    R-->>UI: undefined
+    UI->>D: buildDemoData() 8-12 内容 / 3 成员 / 2-3 计划 / ~30 天历史
+    D-->>UI: AppState（历史由 deriveDueDates 同源生成）
+    UI->>R: writeState(demo) + putAssets(占位图 Blob)
+    R->>DB: 落盘
+  else 已有数据
+    R-->>UI: AppState 快照
+  end
+  UI->>S: setState({...state, hydrated:true})
+  S-->>UI: 骨架屏结束，渲染三模块
+  Note over U,DB: 任意 action = set(...) 后微任务合并 persistState(snapshot)
+  U->>UI: 新增 / 编辑 / 删除任一实体
+  UI->>S: 对应 action（只改自身分片）
+  S->>R: persistState(snapshot)
+  R->>DB: state.put('app_state', snapshot)
+  DB-->>U: 刷新后数据完整保留
+  end
+
+  rect rgb(235, 250, 240)
+  Note over U,PV: ② 新增内容 → 来源识别 → 站内预览 (A-7~A-10 Q2 Q3)
+  U->>UI: 粘贴链接 / 选本地文件 / 手填字段
+  UI->>D: recognizeSource({url, file, pastedText})
+  D->>D: extractBvid(仅完整 URL 与纯 BV 号，不解析短链)
+  alt 命中 BV 号
+    D-->>UI: SourceDescriptor{bilibili, bvid, embedUrl, sourceUrl}
+  else 其他外链
+    D-->>UI: SourceDescriptor{clip, sourceUrl} + 用户粘贴正文
+  else 本地文件
+    UI->>R: putAsset(File → Blob) → assetId
+    D-->>UI: SourceDescriptor{local_image 或 local_note, assetId}
+  end
+  UI->>S: addContent(SourceDescriptor + 全字段)
+  S->>R: persistState
+  U->>PV: 点击卡片请求预览
+  PV->>S: 取 selectedContent.source
+  alt kind = bilibili
+    PV->>PV: iframe player.bilibili.com/player.html?bvid=... + 超时探测
+    alt 加载成功
+      PV-->>U: 站内真播，不跳原站
+    else 超时 / 失败 / 离线
+      PV-->>U: 降级封面卡 +「去原站」兜底按钮
+    end
+  else kind = clip
+    PV->>R: getAsset(clipImageAssetIds)
+    PV-->>U: 剪藏卡片站内阅读视图 + 兜底外链
+  else kind = local_*
+    PV->>R: getAsset → Blob → createObjectURL
+    PV-->>U: 站内图片 / 笔记预览
+  end
+  Note over U,PV: 全链路无 fetch 抓取；外链仅主动点击；图片失败一律 PlaceholderImage
+  end
+
+  rect rgb(255, 248, 230)
+  Note over U,D: ③ 计划 → 应完成日集合 → 连续天数 (B-1 B-3 B-4 Q4 Q5)
+  U->>UI: 配置频率（每天 / 每周 N 次候选星期 / 指定星期 / 自定义日期）
+  UI->>S: upsertPlan(plan)
+  S->>R: persistState
+  U->>UI: 打开日历页 / 翻月 / 切换身份
+  UI->>D: deriveDueDates(plan, {start,end})
+  D->>D: eachDayOfInterval → 生效区间过滤 → matchesFrequency
+  D-->>UI: ISODate[] 应完成日集合（休息日天然不在集合内）
+  UI->>D: computeStreak(dueDates, statusByDate, today)
+  D->>D: leave 跳过 / done +1 / pending 归零
+  D-->>UI: StreakResult{current, longest}
+  UI-->>U: 当前连续 + 最长连续 + 月历热力四态
+  U->>UI: 三态切换 / 补卡 / 提前请假 / 替家人补卡
+  UI->>D: canBackfill(date, today) 校验 0..7 天窗口
+  alt 允许
+    UI->>S: setCheckInStatus / setLeave / backfillFor(targetMemberId)
+    S->>R: persistState
+    UI->>D: 纯函数重算 computeStreak
+    D-->>U: 连续天数与热力即时刷新
+  else 超 7 天
+    UI-->>U: 补卡入口禁用
+  end
+  Note over U,D: 关联内容点击只触发 navigateToContent()，绝不写 ContentItem.completion
+  end
+
+  rect rgb(250, 235, 245)
+  Note over U,SV: ④ 打卡 → 可见性判定 → 空间动态流 (C-2~C-6 Q7 Q8)
+  U->>UI: 打卡(默认 public) / 仅自己 / 计划不在空间显示 / 发到空间
+  UI->>S: upsertCheckIn / setCheckInVisibility / setPlanHidden / publishContent
+  S->>R: persistState
+  Note over S: 只写打卡自身字段，绝不触碰 ContentItem.completion
+  U->>SV: 切换「以某位成员身份预览」（开关必显）
+  SV->>S: setCurrentViewerId(memberId)（不写库、不缓存）
+  S->>D: computeSpaceView(state, viewerId) 全量实时重算
+  D->>D: self_only 短路(仅作者可见) → 计划 hiddenInSpace → 默认公开
+  D->>D: sharedContents / sharedCollections 仅取 publishedToSpace
+  D->>D: cheerCount / hasCheered 去重计数（Q7）
+  D-->>SV: SpaceView{feed, sharedContents, sharedCollections, ...}
+  SV-->>U: 动态流与内容区按该成员重算，结果确有差异
+  U->>SV: 点「加油」
+  SV->>D: toggleCheer(checkInId, viewerId) 已加则取消、未加则新增
+  D->>S: 更新 cheers
+  S->>R: persistState
+  D-->>U: 加油数即时变化
+  end

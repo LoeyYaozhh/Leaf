@@ -1,0 +1,211 @@
+classDiagram
+  direction LR
+
+  class SpaceScoped {
+    <<interface>>
+    +spaceId: ID
+    +extensions: ReservedExtension
+  }
+  class ContentItem {
+    +id: ID
+    +title: string
+    +source: SourceDescriptor
+    +domain: DomainType
+    +media: MediaKind
+    +tags: string[]
+    +collectedAt: ISOTimestamp
+    +contentDate: ISODate
+    +completion: CompletionStatus
+    +collectionIds: ID[]
+    +linkedPlanIds: ID[]
+    +clipBody: string
+    +clipImageAssetIds: ID[]
+    +publishedToSpace: boolean
+  }
+  class SourceDescriptor {
+    +kind: SourceKind
+    +bvid: string
+    +embedUrl: string
+    +sourceUrl: string
+    +assetId: ID
+    +coverUrl: string
+  }
+  class Collection {
+    +id: ID
+    +name: string
+    +orderedContentIds: ID[]
+    +publishedToSpace: boolean
+  }
+  class Frequency {
+    <<union>>
+    +daily
+    +weekly_n
+    +specific_weekdays
+    +custom_dates
+  }
+  class Plan {
+    +id: ID
+    +name: string
+    +memberId: ID
+    +frequency: Frequency
+    +startDate: ISODate
+    +endDate: ISODate
+    +hiddenInSpace: boolean
+    +linkedContentIds: ID[]
+    +linkedCollectionIds: ID[]
+  }
+  class CheckIn {
+    +id: ID
+    +memberId: ID
+    +planId: ID
+    +date: ISODate
+    +status: CheckInStatus
+    +visibility: CheckInVisibility
+    +durationMin: number
+    +note: string
+    +linkedContentIds: ID[]
+    +backfilled: boolean
+  }
+  class Member {
+    +id: ID
+    +name: string
+    +avatarColor: string
+  }
+  class Cheer {
+    +id: ID
+    +checkInId: ID
+    +memberId: ID
+  }
+  class AppState {
+    +contents: ContentItem[]
+    +collections: Collection[]
+    +plans: Plan[]
+    +checkIns: CheckIn[]
+    +members: Member[]
+    +cheers: Cheer[]
+    +currentViewerId: ID
+    +activeTab: TabKey
+    +hydrated: boolean
+  }
+  class SpaceView {
+    +feed: CheckIn[]
+    +sharedContents: ContentItem[]
+    +sharedCollections: Collection[]
+    +cheerCountByCheckIn: Record
+    +cheeredByViewer: Set
+  }
+
+  class SourceService {
+    <<pure>>
+    +recognizeSource(input): SourceDescriptor
+    +extractBvid(input): string
+    +buildBiliEmbedUrl(bvid): string
+  }
+  class ScheduleService {
+    <<pure>>
+    +matchesFrequency(freq, date): boolean
+    +deriveDueDates(plan, range): ISODate[]
+    +deriveAllDueDates(plans, memberId, range): ISODate[]
+  }
+  class StreakService {
+    <<pure>>
+    +computeStreak(dueDates, statusByDate, today): StreakResult
+    +canBackfill(date, today): boolean
+    +getHeatmapStatus(date, dueDates, statusByDate): HeatStatus
+  }
+  class VisibilityService {
+    <<pure>>
+    +isCheckInVisibleInSpace(ci, plan, viewerId): boolean
+    +isContentVisibleInSpace(c, viewerId): boolean
+    +computeSpaceView(state, viewerId): SpaceView
+    +cheerCount(id, cheers): number
+    +toggleCheer(checkInId, memberId, cheers): Cheer[]
+  }
+  class ContentQueryService {
+    <<pure>>
+    +filterContents(contents, criteria): ContentItem[]
+    +searchContents(contents, keyword, collections): ContentItem[]
+    +sortByCollectedAt(contents): ContentItem[]
+  }
+  class CollectionService {
+    <<pure>>
+    +collectionProgress(collection, contentId): Progress
+    +reorderCollection(collection, from, to): ID[]
+  }
+  class AppStore {
+    +state: AppState
+    +addContent(payload): void
+    +setContentCompletion(id, status): void
+    +upsertPlan(plan): void
+    +upsertCheckIn(ci): void
+    +setCheckInStatus(id, status): void
+    +setCheckInVisibility(id, v): void
+    +backfillFor(targetMemberId, date, planId): void
+    +setCurrentViewerId(id): void
+    +toggleCheer(checkInId): void
+    +navigateToContent(id): void
+    +persist(): void
+  }
+  class Repository {
+    +readState(): AppState
+    +writeState(state): void
+    +putAsset(blob): ID
+    +getAsset(id): Blob
+  }
+  class IndexedDB {
+    <<browser>>
+    +state: store
+    +assets: store
+  }
+  class DemoSeed {
+    +buildDemoData(): AppState
+    +makePlaceholderImage(label): Blob
+  }
+  class PreviewRouter {
+    +render(source: SourceDescriptor): View
+  }
+  class BilibiliPlayer
+  class ClipReader
+  class LocalPreview
+  class CoverFallback
+
+  SpaceScoped <|.. ContentItem
+  SpaceScoped <|.. Collection
+  SpaceScoped <|.. Plan
+  SpaceScoped <|.. CheckIn
+  SpaceScoped <|.. Member
+  SpaceScoped <|.. Cheer
+  ContentItem *-- SourceDescriptor : 内嵌
+  ContentItem }o--o{ Collection : collectionIds 多归属
+  Plan }o--o{ ContentItem : linkedPlanIds 仅跳转
+  Plan *-- Frequency : 配置
+  Plan "1" --> "*" CheckIn : 生成应完成日排期
+  Member "1" --> "*" Plan : 归属
+  Member "1" --> "*" CheckIn : 归属
+  CheckIn "1" --> "*" Cheer : 唯一键去重
+  AppState o-- "0..*" ContentItem : contents
+  AppState o-- "0..*" Collection : collections
+  AppState o-- "0..*" Plan : plans
+  AppState o-- "0..*" CheckIn : checkIns
+  AppState o-- "0..*" Member : members
+  AppState o-- "0..*" Cheer : cheers
+
+  SourceService ..> SourceDescriptor : 产出
+  ScheduleService ..> Plan : 读取
+  StreakService ..> ScheduleService : 同源调用 deriveDueDates
+  VisibilityService ..> AppState : 输入
+  VisibilityService ..> SpaceView : 产出
+  ContentQueryService ..> ContentItem : 过滤排序
+  CollectionService ..> Collection : 进度
+  AppStore ..> VisibilityService : 调用 computeSpaceView
+  AppStore ..> ScheduleService : 调用 deriveDueDates
+  AppStore ..> StreakService : 调用 computeStreak
+  AppStore ..> Repository : persist
+  Repository ..> IndexedDB : 读写
+  DemoSeed ..> AppState : 首次运行生成
+  DemoSeed ..> Repository : 写入占位图 Blob
+  PreviewRouter ..> SourceDescriptor : 依 kind 分发
+  PreviewRouter --> BilibiliPlayer
+  PreviewRouter --> ClipReader
+  PreviewRouter --> LocalPreview
+  BilibiliPlayer ..> CoverFallback : 失败降级

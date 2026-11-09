@@ -1,0 +1,14 @@
+@tailwind base;        /* preflight 已在 tailwind.config.ts 关闭，近乎为空 */
+@tailwind components;
+@tailwind utilities;
+
+/* 其余全局样式尽量为空，交给 MUI CssBaseline；此两行仅保证 100vh 布局可用 */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}

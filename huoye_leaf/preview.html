@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>活页 / Leaf · 演示壳</title>
+<style>
+:root{--g:#0F6E56;--gl:#E1F5EE;--gm:#5DCAA5;--line:#F1EFE8;--line2:#D3D1C7;--ink:#20241F;--sub:#6B716C;--bg:#F7F8F6;--card:#fff;--warn:#B5652E;--leave:#E9C46A}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none}
+.topbar{border-bottom:1px solid var(--line2);background:#fff;padding:12px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand{font-size:19px;font-weight:700;color:var(--g);letter-spacing:.5px}
+.brand small{font-weight:400;color:var(--sub);font-size:13px;margin-left:4px}
+.slogan{color:var(--sub);font-size:12.5px}
+.shell{display:block;padding:14px}
+@media(min-width:1024px){.shell{display:grid;grid-template-columns:190px minmax(0,1fr) 340px;gap:20px;max-width:1440px;margin:0 auto;padding:20px}}
+.sidenav{display:none}
+@media(min-width:1024px){.sidenav{display:block;position:sticky;top:20px;align-self:start}}
+.navbtn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:11px 13px;border-radius:9px;color:var(--sub);margin-bottom:4px;border:1px solid transparent}
+.navbtn .ic{width:20px;text-align:center;font-size:15px}
+.navbtn.active{background:var(--gl);color:var(--g);font-weight:600;border-color:var(--gm)}
+.navbtn:hover:not(.active){background:var(--line)}
+.nav-note{margin-top:16px;padding:10px 12px;border:1px dashed var(--line2);border-radius:9px;color:var(--sub);font-size:12px}
+.content{min-width:0}
+.page{display:none}
+h2{font-size:16px;margin-bottom:10px}
+.sub{color:var(--sub);font-size:12.5px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.search{flex:1;min-width:180px;padding:9px 12px;border:1px solid var(--line2);border-radius:9px;background:#fff;outline:none}
+.search:focus{border-color:var(--gm)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{padding:5px 13px;border:1px solid var(--line2);border-radius:999px;background:#fff;color:var(--sub);font-size:12.5px}
+.chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.lib-count{color:var(--sub);font-size:12px;margin-bottom:8px}
+.grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.grid{grid-template-columns:1fr 1fr}}
+.card{background:var(--card);border:1px solid var(--line2);border-radius:11px;padding:12px;cursor:pointer}
+.card:hover{border-color:var(--gm)}
+.card.sel{border-color:var(--g);box-shadow:0 0 0 2px var(--gl)}
+.card-h{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
+.tag{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--gl);color:var(--g)}
+.tag.soft{background:var(--line);color:var(--sub)}
+.tag.warn{background:#FBEEE3;color:var(--warn)}
+.src{margin-left:auto;font-size:11px;color:var(--sub)}
+.card-t{font-weight:600;font-size:14px;margin-bottom:6px}
+.card-meta{font-size:11.5px;color:var(--sub);display:flex;gap:8px;align-items:center}
+.st{cursor:pointer;border:1px solid var(--line2);border-radius:6px;padding:1px 7px;font-size:11px;color:var(--ink)}
+.st:hover{border-color:var(--g)}
+.st-2{background:var(--gl);color:var(--g);border-color:var(--gm)}
+.empty{padding:22px;text-align:center;color:var(--sub);border:1px dashed var(--line2);border-radius:10px;font-size:12.5px}
+.hint{color:var(--sub);font-size:11.5px;font-weight:400}
+.preview{display:none}
+@media(max-width:1023px){
+  .preview.open{display:block;position:fixed;inset:0;z-index:40;overflow:auto;background:#fff;padding:16px}
+  .bottomnav{display:flex}
+}
+@media(min-width:1024px){
+  .preview{display:block;position:sticky;top:20px;align-self:start;background:#fff;border:1px solid var(--line2);border-radius:12px;overflow:hidden}
+}
+.pv-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line2);padding:10px 14px;font-size:13px;font-weight:600;color:var(--g)}
+.pv-close{border:1px solid var(--line2);border-radius:7px;padding:3px 9px;font-size:12px;color:var(--sub)}
+.pv-body{padding:14px}
+@media(min-width:1024px){.pv-close{display:none}}
+.pv-empty{color:var(--sub);font-size:12.5px;padding:30px 6px;text-align:center;line-height:1.9}
+.pv-t{font-size:15px;font-weight:700}
+.pv-sub{color:var(--sub);font-size:12px;margin:3px 0 10px}
+.pv-status{font-size:12px;background:var(--gl);border-radius:8px;padding:7px 10px;margin-bottom:12px}
+.frame{background:#000;border-radius:8px;aspect-ratio:16/10;overflow:hidden;margin-bottom:10px}
+.frame iframe{width:100%;height:100%;border:0;display:block}
+.cover{background:#26302C;border-radius:8px;aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:6px;margin-bottom:10px}
+.cover .play{width:46px;height:46px;border-radius:50%;background:var(--gm);color:#08382C;display:flex;align-items:center;justify-content:center;font-size:19px}
+.cover-s{font-size:11px;opacity:.7}
+.btn{padding:7px 13px;border:1px solid var(--g);border-radius:8px;background:var(--g);color:#fff;font-size:12.5px}
+.btn.ghost{background:#fff;color:var(--g)}
+.btn.sm{padding:5px 10px;font-size:12px;background:#fff;color:var(--ink);border-color:var(--line2)}
+.btn.sm.on{background:var(--g);color:#fff;border-color:var(--g)}
+.read{border:1px solid var(--line2);border-radius:9px;padding:13px;margin-bottom:10px}
+.read-t{font-weight:700;margin-bottom:8px}
+.read-body{font-size:13px;color:#3A403B;line-height:1.8;white-space:pre-wrap}
+.read-from{font-size:11.5px;color:var(--sub);border-top:1px dashed var(--line2);margin:10px 0;padding-top:8px}
+.pic{height:150px;border-radius:9px;display:flex;align-items:flex-end;padding:10px;color:#fff;font-size:12px;margin-bottom:10px}
+.pic-0{background:#5C7C6B}.pic-1{background:#8A7B57}.pic-2{background:#4E6B7E}
+.stat-row{display:flex;gap:10px;margin-bottom:14px}
+.stat{flex:1;background:#fff;border:1px solid var(--line2);border-radius:11px;padding:14px}
+.stat-n{font-size:28px;font-weight:700;color:var(--g);line-height:1.1}
+.stat-l{font-size:12px;color:var(--sub);margin-top:3px}
+.panel{background:#fff;border:1px solid var(--line2);border-radius:11px;padding:13px;margin-bottom:12px}
+.wk,.heat{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wk span{text-align:center;font-size:11px;color:var(--sub);padding-bottom:2px}
+.cell{aspect-ratio:1;border-radius:7px;border:1px solid transparent;display:flex;align-items:flex-start;justify-content:flex-end;padding:4px;font-size:11px;cursor:pointer;color:#fff}
+.cell span{opacity:.85}
+.cell.sel{outline:2px solid var(--g);outline-offset:1px}
+.s-done{background:var(--g)}.s-leave{background:var(--leave);color:#6b5518}.s-todo{background:#E4E2DA;color:#6B716C}.s-none{background:#FAFAF8;color:#B9BCB5;border:1px dashed var(--line2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--sub)}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.day-h,.feed-h{font-size:13px;font-weight:600}
+.todo{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.todo:last-child{border-bottom:0}
+.todo .tag{margin-left:auto}
+.day-ops{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 8px}
+.viewer-bar{background:var(--gl);border:1px solid var(--gm);border-radius:11px;padding:12px;margin-bottom:12px}
+.viewer-bar label{font-weight:700;color:var(--g);font-size:13px}
+.viewerSel{display:block;width:100%;margin:8px 0 6px;padding:9px 11px;border:1px solid var(--gm);border-radius:8px;background:#fff;font-size:14px;font-weight:600;color:var(--g)}
+.viewerBadge{font-size:12px;color:var(--g);font-weight:600}
+.feedCount{font-size:12px;color:var(--sub);margin:10px 0 8px;font-weight:600}
+.feed{display:flex;gap:10px;background:#fff;border:1px solid var(--line2);border-radius:10px;padding:11px;margin-bottom:9px}
+.av{width:34px;height:34px;flex:0 0 34px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.feed-b{flex:1;min-width:0}
+.feed-h{font-weight:400}
+.feed-h b{font-weight:700}
+.date{font-size:11px;color:var(--sub);margin-left:6px;font-weight:400}
+.note{font-size:12.5px;color:#3A403B;margin:5px 0 8px}
+.like{border:1px solid var(--line2);border-radius:999px;padding:3px 11px;font-size:11.5px;color:var(--sub)}
+.like.on{background:var(--gl);border-color:var(--gm);color:var(--g);font-weight:600}
+.pub{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px}
+.pub:last-child{border-bottom:0}
+.footer{color:var(--sub);font-size:11px;line-height:1.7;border-top:1px solid var(--line);margin-top:22px;padding:12px 2px 30px}
+.bottomnav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:30;background:#fff;border-top:1px solid var(--line2)}
+.bottomnav .navbtn{flex:1;flex-direction:column;gap:2px;justify-content:center;border-radius:0;margin:0;padding:8px 0;font-size:11px;text-align:center}
+.bottomnav .navbtn .ic{font-size:17px}
+.bottomnav .navbtn.active{background:var(--gl);border:0;border-top:2px solid var(--g)}
+.toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%);background:#20241F;color:#fff;padding:9px 16px;border-radius:9px;font-size:12.5px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:60;max-width:88vw}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">活页 <small>/ Leaf</small></div>
+  <div class="slogan">把视频、图片、笔记，装进一本会长大的册子</div>
+</header>
+<div class="shell">
+  <nav class="sidenav" id="sideNav"></nav>
+  <main class="content">
+    <section class="page" id="page-library">
+      <h2>活页 · 个人资料库</h2>
+      <div class="sub">按领域收纳内容；视频 / 图片 / 笔记是固有属性。内容完成状态与打卡完全独立。</div>
+      <div class="row"><input class="search" id="q" placeholder="搜标题 / 领域 / 正文，试试：拉伸、杠铃、番茄钟" oninput="state.q=this.value;renderLibrary()"></div>
+      <div class="chips" id="chips"></div>
+      <div class="lib-count" id="libCount"></div>
+      <div class="grid" id="libList"></div>
+    </section>
+    <section class="page" id="page-calendar">
+      <h2>日历页 · 打卡记录</h2>
+      <div class="sub">2026 年 11 月热力；点击某日查看当天待办并切换状态。</div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" id="statCur">0</div><div class="stat-l">当前连续（天）</div></div>
+        <div class="stat"><div class="stat-n" id="statBest">0</div><div class="stat-l">最长连续（天）</div></div>
+      </div>
+      <div class="panel">
+        <div class="wk"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+        <div class="heat" id="heat"></div>
+        <div class="legend">
+          <span><i style="background:var(--g)"></i>已完成</span>
+          <span><i style="background:var(--leave)"></i>请假</span>
+          <span><i style="background:#E4E2DA"></i>未完成</span>
+          <span><i style="background:#FAFAF8;border:1px dashed var(--line2)"></i>非排期日</span>
+        </div>
+      </div>
+      <div class="panel" id="dayBox"></div>
+      <div class="panel"><div class="day-h">计划列表</div><div id="planList"></div></div>
+    </section>
+    <section class="page" id="page-family">
+      <h2>家庭空间</h2>
+      <div class="sub">一个家庭空间，家人互相看到「打卡了什么」。切换身份可检查可见性差异。</div>
+      <div class="viewer-bar">
+        <label for="viewerSel">以…身份预览（切换后动态流立即全量重算）</label>
+        <select class="viewerSel" id="viewerSel" onchange="setViewer(this.value)"></select>
+        <div class="viewerBadge" id="viewerBadge"></div>
+        <div class="hint" style="margin-top:6px">规则：仅自己 = 仅作者可见（带私密标记）；「不在空间显示」计划的打卡 = 所有人不可见。</div>
+      </div>
+      <div class="feedCount" id="feedCount"></div>
+      <div id="feed"></div>
+      <div class="panel" style="margin-top:14px"><div class="day-h">已发到空间的内容</div><div class="hint" style="margin:4px 0 6px">仅显示手动发布过的条目，不等于资料库全部内容。</div><div id="pubList"></div></div>
+    </section>
+    <footer class="footer">此为零依赖演示壳，用于在无法构建的环境预览产品形态；完整 React/Vite 实现见同目录 src/，本地执行 npm install && npm run dev 运行。</footer>
+  </main>
+  <aside class="preview" id="preview">
+    <div class="pv-head"><span>内容预览</span><button class="pv-close" onclick="closePreview()">返回</button></div>
+    <div class="pv-body" id="pvBody"></div>
+  </aside>
+</div>
+<nav class="bottomnav" id="bottomNav"></nav>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ST=['未开始','进行中','已完成'];
+const SRC={bilibili:'B 站视频',clip:'剪藏卡片',image:'本地图片',note:'笔记'};
+const ITEMS=[
+ {id:1,t:'新手杠铃训练入门',d:'健身',m:'视频',src:'bilibili',add:'11-02',body:''},
+ {id:2,t:'训练后拉伸清单',d:'健身',m:'笔记',src:'note',add:'11-03',body:'练完务必拉伸：股四头肌、髋屈肌、胸椎旋转，每个动作保持 30 秒，配合鼻吸口呼。拉伸别憋气。'},
+ {id:3,t:'番茄钟工作法剪藏',d:'学习',m:'笔记',src:'clip',add:'11-01',body:'番茄钟：专注 25 分钟 + 休息 5 分钟，每 4 个番茄钟长休一次。任务要拆到能在单个番茄钟内完成，中途不切换。',from:'效率手记 · 2026-10'},
+ {id:4,t:'周末徒步随手拍',d:'爱好',m:'图片',src:'image',add:'10-28',body:'山脊线、溪流与午后光线，记录一次 8 公里环线。'},
+ {id:5,t:'杠铃深蹲要点摘录',d:'健身',m:'笔记',src:'clip',add:'10-30',body:'杠铃路径保持垂直，膝盖对准脚尖，下蹲时吸气绷紧核心，站起时呼气，脚掌三点稳定踩地。',from:'力量训练笔记'},
+ {id:6,t:'晨跑路线图',d:'健身',m:'图片',src:'image',add:'11-04',body:'沿河 5 公里折返，已标注配速区间与补水点。'}
+];
+let itemStatus={1:'未开始',2:'进行中',3:'未开始',4:'已完成',5:'进行中',6:'未开始'};
+const PLANS=[
+ {id:'p1',n:'每天阅读',f:'每天',hide:false},
+ {id:'p2',n:'力量训练',f:'每周三次',hide:false},
+ {id:'p3',n:'晨间冥想',f:'自定义',hide:true}
+];
+let dayStatus={};
+for(let d=1;d<=30;d++) dayStatus[d]=(d%7===1)?'none':'todo';
+[1,2,3,4,5,6,7,8,9].forEach(d=>dayStatus[d]='done');
+dayStatus[12]='leave';dayStatus[13]='none';dayStatus[20]='leave';
+const MEMBERS=[{id:'A',n:'林小满',c:'#0F6E56'},{id:'B',n:'林大山',c:'#2E6F9E'},{id:'C',n:'苏叶',c:'#B5652E'}];
+let viewer='A';
+let FEED=[
+ {id:1,who:'A',plan:'每天阅读',date:'11-08',note:'读完第三章，番茄钟 4 个',vis:'self',likes:2,liked:false},
+ {id:2,who:'B',plan:'力量训练',date:'11-08',note:'深蹲加了 5kg，状态不错',vis:'space',likes:3,liked:false},
+ {id:3,who:'C',plan:'每天阅读',date:'11-07',note:'晨读 30 分钟，记了卡片',vis:'space',likes:1,liked:false},
+ {id:4,who:'A',plan:'晨间冥想',date:'11-07',note:'10 分钟呼吸练习',vis:'space',hide:true,likes:0,liked:false},
+ {id:5,who:'B',plan:'力量训练',date:'11-06',note:'卧推 4 组',vis:'space',likes:2,liked:false},
+ {id:6,who:'C',plan:'每天阅读',date:'11-05',note:'整理读书卡片',vis:'space',likes:4,liked:false}
+];
+const PUBLISHED=[{t:'新手杠铃训练入门',who:'A',date:'11-02'},{t:'周末徒步随手拍',who:'C',date:'10-28'}];
+const state={tab:'library',media:'全部',q:'',sel:null,fallback:false,selDay:9};
+let toastT;
+function toast(m){const el=$('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2200)}
+const TABS=[['library','活页','▤'],['calendar','日历页','▦'],['family','家庭空间','◍']];
+function buildNav(){
+  const h=TABS.map(([k,n,ic])=>`<button class="navbtn" data-tab="${k}" onclick="go('${k}')"><span class="ic">${ic}</span>${n}</button>`).join('');
+  $('sideNav').innerHTML=h+'<div class="nav-note">演示壳：内容完成状态与打卡状态是两套独立数据，互不影响。</div>';
+  $('bottomNav').innerHTML=h;
+}
+function go(tab){
+  state.tab=tab;
+  TABS.forEach(([k])=>$('page-'+k).style.display=(k===tab?'block':'none'));
+  document.querySelectorAll('[data-tab]').forEach(el=>el.classList.toggle('active',el.dataset.tab===tab));
+  if(window.innerWidth>=1024)closePreview();
+  window.scrollTo(0,0);
+}
+function setMedia(m){state.media=m;renderChips();renderLibrary()}
+function renderChips(){
+  $('chips').innerHTML=['全部','视频','图片','笔记'].map(m=>`<button class="chip ${state.media===m?'on':''}" onclick="setMedia('${m}')">${m}</button>`).join('');
+}
+function renderLibrary(){
+  const q=state.q.trim().toLowerCase();
+  const list=ITEMS.filter(it=>(state.media==='全部'||it.m===state.media)&&(!q||(it.t+it.body+it.d).toLowerCase().includes(q)));
+  $('libCount').textContent='共 '+ITEMS.length+' 条，当前显示 '+list.length+' 条';
+  $('libList').innerHTML=list.length?list.map(it=>`
+    <div class="card ${state.sel===it.id?'sel':''}" onclick="selectItem(${it.id})">
+      <div class="card-h"><span class="tag">${it.d}</span><span class="tag soft">${it.m}</span><span class="src">${SRC[it.src]}</span></div>
+      <div class="card-t">${esc(it.t)}</div>
+      <div class="card-meta">收录 ${it.add} · 完成状态 <span class="st st-${ST.indexOf(itemStatus[it.id])}" onclick="cycleItem(event,${it.id})">${itemStatus[it.id]} ⇄</span></div>
+    </div>`).join(''):'<div class="empty">没有匹配内容。搜索会命中剪藏正文与笔记正文，试试：拉伸 / 杠铃 / 番茄钟</div>';
+}
+function cycleItem(e,id){e.stopPropagation();itemStatus[id]=ST[(ST.indexOf(itemStatus[id])+1)%3];renderLibrary();renderPreview()}
+function selectItem(id){state.sel=id;state.fallback=false;renderPreview();if(window.innerWidth<1024)$('preview').classList.add('open')}
+function closePreview(){$('preview').classList.remove('open')}
+function doFallback(){state.fallback=!state.fallback;renderPreview()}
+function renderPreview(){
+  const it=ITEMS.find(x=>x.id===state.sel);
+  if(!it){$('pvBody').innerHTML='<div class="pv-empty">点击左侧任意内容卡片<br>在此查看站内阅读视图 / 视频 / 图片</div>';return}
+  let h=`<div class="pv-t">${esc(it.t)}</div><div class="pv-sub">${it.d} · ${it.m} · ${SRC[it.src]} · 收录 ${it.add}</div>`;
+  h+=`<div class="pv-status">内容完成状态：<b>${itemStatus[it.id]}</b> <span class="hint">（独立于打卡，切换不影响日历数据）</span></div>`;
+  if(it.src==='bilibili'){
+    h+=state.fallback
+      ?`<div class="cover"><div class="play">▶</div><div>封面卡 · ${esc(it.t)}</div><div class="cover-s">B 站视频 BV1xx411c7mu</div></div>`
+      :`<div class="frame"><iframe src="https://player.bilibili.com/player.html?bvid=BV1xx411c7mu&amp;autoplay=0" allowfullscreen frameborder="0" scrolling="no"></iframe></div>`;
+    h+=`<button class="btn ghost" onclick="doFallback()">${state.fallback?'重新尝试播放':'加载失败看封面卡'}</button>`;
+  }else if(it.src==='clip'){
+    h+=`<div class="read"><div class="read-t">${esc(it.t)}</div><div class="read-body">${esc(it.body)}</div><div class="read-from">来源署名：${esc(it.from||'站内剪藏')} · 已存档，不自动跳转</div><button class="btn" onclick="toast('演示壳不跳转外站，原文已存档于上方')">去原站</button></div>`;
+  }else if(it.src==='image'){
+    h+=`<div class="pic pic-${it.id%3}"><span>本地图片 · 站内内容视图</span></div><div class="read-body">${esc(it.body)}</div>`;
+  }else{
+    h+=`<div class="read"><div class="read-body">${esc(it.body)}</div></div>`;
+  }
+  $('pvBody').innerHTML=h;
+}
+function streak(){
+  let cur=0;for(let d=9;d>=1;d--){if(dayStatus[d]==='done')cur++;else break}
+  let best=0,run=0;for(let d=1;d<=30;d++){if(dayStatus[d]==='done'){run++;best=Math.max(best,run)}else run=0}
+  return{cur,best};
+}
+function renderPlans(){
+  $('planList').innerHTML=PLANS.map(p=>`<div class="todo"><span>${p.n}</span><span class="tag soft">${p.f}</span>${p.hide?'<span class="tag warn">不在空间显示</span>':''}</div>`).join('');
+}
+function pickDay(d){state.selDay=d;renderCalendar()}
+function setDay(s){dayStatus[state.selDay]=s;renderCalendar()}
+function renderCalendar(){
+  const{cur,best}=streak();$('statCur').textContent=cur;$('statBest').textContent=best;
+  let g='';for(let i=0;i<6;i++)g+='<span></span>';
+  for(let d=1;d<=30;d++)g+=`<div class="cell s-${dayStatus[d]} ${state.selDay===d?'sel':''}" onclick="pickDay(${d})"><span>${d}</span></div>`;
+  $('heat').innerHTML=g;
+  const d=state.selDay;
+  $('dayBox').innerHTML=`<div class="day-h">11 月 ${d} 日 · 当天待办</div>
+    <div>${PLANS.map(p=>`<div class="todo"><span>${p.n}</span><span class="tag soft">${p.f}</span>${p.hide?'<span class="tag warn">不在空间显示</span>':''}</div>`).join('')}</div>
+    <div class="day-ops">标记当天：
+      <button class="btn sm ${dayStatus[d]==='todo'?'on':''}" onclick="setDay('todo')">未完成</button>
+      <button class="btn sm ${dayStatus[d]==='done'?'on':''}" onclick="setDay('done')">已完成</button>
+      <button class="btn sm ${dayStatus[d]==='leave'?'on':''}" onclick="setDay('leave')">请假</button>
+      <button class="btn sm ${dayStatus[d]==='none'?'on':''}" onclick="setDay('none')">非排期日</button></div>
+    <div class="hint">改打卡状态不会改动「活页」里任何内容的完成状态，反之亦然。</div>`;
+}
+function visible(f){if(f.hide)return false;if(f.vis==='self'&&f.who!==viewer)return false;return true}
+function setViewer(v){viewer=v;renderFamily()}
+function toggleLike(id){const f=FEED.find(x=>x.id===id);f.liked=!f.liked;f.likes+=f.liked?1:-1;renderFamily()}
+function renderFamily(){
+  const me=MEMBERS.find(m=>m.id===viewer);
+  $('viewerSel').value=viewer;
+  $('viewerBadge').textContent='当前身份：'+me.n+'（'+viewer+'）';
+  const vis=FEED.filter(visible);
+  $('feedCount').textContent='当前可见 '+vis.length+' 条动态 / 全部 '+FEED.length+' 条（含隐藏项）';
+  $('feed').innerHTML=vis.map(f=>{
+    const m=MEMBERS.find(x=>x.id===f.who);
+    return `<div class="feed"><div class="av" style="background:${m.c}">${f.who}</div><div class="feed-b">
+      <div class="feed-h"><b>${m.n}</b> 完成了「${f.plan}」<span class="date">${f.date}</span>${f.vis==='self'?'<span class="tag warn" style="margin-left:6px">仅自己 · 私密</span>':''}</div>
+      <div class="note">${esc(f.note)}</div>
+      <button class="like ${f.liked?'on':''}" onclick="toggleLike(${f.id})">${f.liked?'已加油':'加油'} · ${f.likes}</button>
+    </div></div>`;
+  }).join('')||'<div class="empty">当前身份下没有可见动态</div>';
+}
+buildNav();
+renderChips();renderLibrary();renderPreview();renderPlans();renderCalendar();
+$('viewerSel').innerHTML=MEMBERS.map(m=>`<option value="${m.id}">以 ${m.n}（${m.id}）身份预览</option>`).join('');
+$('pubList').innerHTML=PUBLISHED.map(p=>`<div class="pub"><span>${esc(p.t)}</span><span class="date">${p.who} · ${p.date}</span></div>`).join('');
+renderFamily();
+go('library');
+</script>
+</body>
+</html>
